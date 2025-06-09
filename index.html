@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Structural Engineering Knowledge Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals with Subtle Accents -->
+    <!-- Application Structure Plan: A single-page, linear quiz format was chosen for its intuitive user flow. The structure consists of a header, an introduction, a dynamically generated quiz form, and a results section that appears upon submission. This design allows users to focus on the questions sequentially and receive immediate, consolidated feedback at the top of the page, which includes a score summary and a visual chart. The quiz body is then updated in place to show correct/incorrect answers, facilitating learning without navigating away. A 'Try Again' button provides a simple loop to retake the quiz. This structure is optimal for self-assessment and learning from the provided material. -->
+    <!-- Visualization & Content Choices: The core content is multiple-choice questions, presented using standard radio buttons for clarity and accessibility. The primary visualization is a donut chart (via Chart.js) in the results section. Goal: To provide a quick, visual summary of the user's performance (correct vs. incorrect answers). This is more engaging than text alone. The secondary visual feedback is color-coding the answers (green for correct, red for incorrect) after submission. Goal: To provide detailed, question-level feedback for learning. This direct mapping of results onto the quiz questions is an effective educational tool. All interactions are handled with vanilla JavaScript. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option-label {
+            transition: background-color 0.3s ease;
+        }
+        .quiz-option-label.selected {
+             background-color: #e0e7ff; /* Indigo 100 */
+             border-color: #6366f1; /* Indigo 500 */
+        }
+        .quiz-option-label.correct {
+            background-color: #dcfce7; /* Green 100 */
+            border-color: #22c55e; /* Green 500 */
+            color: #166534; /* Green 800 */
+        }
+        .quiz-option-label.incorrect {
+            background-color: #fee2e2; /* Red 100 */
+            border-color: #ef4444; /* Red 500 */
+            color: #991b1b; /* Red 800 */
+        }
+         .quiz-option-label.actual-answer {
+            background-color: #dbeafe; /* Blue 100 */
+            border-color: #3b82f6; /* Blue 500 */
+            color: #1e40af; /* Blue 800 */
+        }
+        #results-container {
+            scroll-margin-top: 20px;
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Structural Engineering Knowledge Quiz</h1>
+            <p class="mt-2 text-lg text-gray-600">Test your understanding of fundamental concepts and design principles.</p>
+        </header>
+
+        <main>
+            <div id="results-container" class="hidden bg-white p-6 rounded-2xl shadow-lg mb-8 border border-gray-200">
+                 <h2 class="text-2xl font-bold text-center mb-4">Your Results</h2>
+                 <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="chart-container relative h-48 w-48 md:h-56 md:w-56 flex-shrink-0">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <p id="score-text" class="text-xl font-semibold text-gray-800"></p>
+                        <p id="score-percentage" class="text-5xl font-bold text-blue-600"></p>
+                         <button id="reset-btn" class="mt-4 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                            Try Again
+                        </button>
+                    </div>
+                 </div>
+            </div>
+
+            <form id="quiz-form" class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-200">
+                <div class="text-center mb-8">
+                    <p class="text-gray-600">Select the best answer for each question below and click "Submit Quiz" when you're finished.</p>
+                </div>
+                <div id="questions-wrapper" class="space-y-8">
+                </div>
+                <div class="mt-10 text-center">
+                    <button type="submit" id="submit-btn" class="px-8 py-3 bg-green-600 text-white font-bold rounded-lg shadow-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                        Submit Quiz
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Interactive Quiz Application. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const quizData = [
+                {
+                    question: "A square isolated footing is proposed to support building service loads. The gross allowable soil bearing capacity is given as 5 kips/ft². The base of the footing is to be located 3 ft below grade. The unit weight of the soil is 120 pcf, and the footing thickness is assumed to be 1.5 ft. The unit weight of concrete can be taken as 150 pcf. What is the net allowable soil pressure available to support the building service loads?",
+                    options: { A: "4.25 ksf", B: "4.5 ksf", C: "5.0 ksf", D: "5.3 ksf" },
+                    answer: "A"
+                },
+                {
+                    question: "For a simply supported beam with a span of 20 ft subjected to a uniformly distributed load of 2 kips/ft over its entire length, what is the maximum service moment?",
+                    options: { A: "50 kip-ft", B: "100 kip-ft", C: "200 kip-ft", D: "400 kip-ft" },
+                    answer: "B"
+                },
+                {
+                    question: "In a two-dimensional truss joint with only three members, two of which are collinear, and no external load applied at that joint, what is the force in the non-collinear member?",
+                    options: { A: "Tension member", B: "Compression member", C: "Zero-force member", D: "Load-bearing member" },
+                    answer: "C"
+                },
+                {
+                    question: "A rectangular concrete column with dimensions 12-in by 18-in is subjected to a concentric axial compression load of 180 kips. What is the axial stress in the column?",
+                    options: { A: "0.833 ksi", B: "1.0 ksi", C: "0.833 psi", D: "1.0 psi" },
+                    answer: "A"
+                },
+                {
+                    question: "For a rectangular concrete beam section with a width (b) of 14 inches and an effective depth (d) of 22 inches, reinforced with 3-#8 bars (Area per bar = 0.79 in²) with The beam is subjected to a total service uniform dead load of 1.5 kip/ft including beam weight and a service uniform live load of 2.5 kip/ft. Use Grade 50 steel.",
+                    options: { A: "W18x35", B: "W18x40", C: "W18x46", D: "W18x50" },
+                    answer: "A"
+                },
+                {
+                    question: "Determine the axial design strength ΦPn for a short concrete column with ties, neglecting the effects of flexure. The column is 14-in x 14-in, reinforced with 6-#8 longitudinal bars (Area per bar = 0.79 in²) with reinforcement yield strength (fy) = 60 ksi. Concrete compressive strength (f’c) is 4 ksi.",
+                    options: { A: "417 kips", B: "525 kips", C: "600 kips", D: "650 kips" },
+                    answer: "D"
+                },
+                {
+                    question: "According to ASCE 7, which of the following load combinations for Strength Design includes the highest load factor for live load L?",
+                    options: { A: "1.4D", B: "1.2D + 1.6L + 0.5Lr or S or R", C: "1.2D + 1.6Lr or S or R + 1.0L", D: "0.9D + 1.0W" },
+                    answer: "B"
+                },
+                {
+                    question: "What does the term 'Effective Length Factor K' account for in column buckling analysis?",
+                    options: { A: "The material properties of the column", B: "The slenderness ratio of the column", C: "The boundary conditions or end restraints of the column", D: "The cross-sectional area of the column" },
+                    answer: "C"
+                },
+                {
+                    question: "For a simply supported beam with a uniformly distributed load over its entire span, what is the shape of the corresponding shear diagram?",
+                    options: { A: "Constant", B: "Linear", C: "Parabolic second degree curve", D: "Cubic third degree curve" },
+                    answer: "B"
+                },
+                {
+                    question: "According to the provided sources, the design wind pressure calculated using the IBC alternate procedure is given by which basic relationship?",
+                    options: { A: "P = q * Kz * Kzt * Cnet", B: "P = 0.00256 * V² * Kz * Kzt * Cnet", C: "P = Cnet * V² / 2g", D: "P = 1.6 * q * G * Cp" },
+                    answer: "B"
+                },
+                {
+                    question: "What is the primary failure mode that the concrete breakout strength calculation addresses for concrete anchors subjected to tension?",
+                    options: { A: "Pullout of the anchor from the concrete", B: "Splitting of the concrete member due to anchor expansion", C: "A cone-shaped volume of concrete breaking away from the surface", D: "Yielding of the anchor steel" },
+                    answer: "C"
+                },
+                {
+                    question: "When designing a one-way concrete slab using the ACI code, the design is performed for a strip of what standard width?",
+                    options: { A: "The full width of the slab", B: "10 inches", C: "12 inches", D: "18 inches" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the NDS, for a sawn lumber beam subjected to flexure, which of the following is an adjustment factor applied to the nominal bending design value Fb?",
+                    options: { A: "Creep Factor CR", B: "Bearing Area Factor Cb", C: "Beam Stability Factor CL", D: "Duration of Load Factor for Live Load" },
+                    answer: "C"
+                },
+                {
+                    question: "In masonry design using the Working Stress Design method, the modular ratio 'n' is calculated as:",
+                    options: { A: "Es / f'm", B: "fy / Em", C: "Es / Em", D: "f'm / fy" },
+                    answer: "C"
+                },
+                {
+                    question: "For a shallow foundation subjected to an eccentric load P with eccentricity 'e' about one axis, if the eccentricity e is greater than L/6 where L is the dimension of the footing in the direction of eccentricity, what is the resulting soil pressure distribution under the footing?",
+                    options: { A: "Uniform rectangular pressure", B: "Triangular pressure with zero pressure at one edge", C: "Trapezoidal pressure", D: "Pressure with uplift over a portion of the footing" },
+                    answer: "D"
+                },
+                {
+                    question: "According to the sources, the AISC specification recommends limiting the slenderness ratio KL/r for steel columns to:",
+                    options: { A: "100 or less", B: "200 or less", C: "300 or less", D: "There is no limit" },
+                    answer: "B"
+                },
+                {
+                    question: "For prestressed concrete members, the eccentricity 'e' of the prestressing strand is measured from the:",
+                    options: { A: "Bottom of the beam to the centroid of the strand", B: "Top of the beam to the centroid of the strand", C: "Centroid of the concrete cross-section to the centroid of the strand", D: "Neutral axis of the gross concrete section to the centroid of the strand" },
+                    answer: "C"
+                },
+                {
+                    question: "According to ASCE 7/IBC, what percentage of the floor live load is typically included when calculating the effective seismic weight W for seismic analysis?",
+                    options: { A: "0%", B: "10%", C: "25%", D: "100%" },
+                    answer: "C"
+                },
+                {
+                    question: "When considering lateral earth pressure on a retaining wall, which condition typically results in the lowest lateral pressure?",
+                    options: { A: "At-rest earth pressure", B: "Active earth pressure", C: "Passive earth pressure", D: "Surcharged earth pressure" },
+                    answer: "B"
+                },
+                {
+                    question: "In the context of load paths for lateral forces in a building, what is the function of collectors or drag struts in a flexible diaphragm system?",
+                    options: { A: "To resist vertical gravity loads", B: "To transfer torsional moments to shear walls", C: "To transmit diaphragm reactions to shear walls", D: "To prevent deflection of the diaphragm" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the provided discussion on steel composite beam design, what is typically assumed regarding the concrete slab in the negative moment region?",
+                    options: { A: "The concrete carries the full tension force", B: "The concrete carries no tension forces", C: "The concrete and steel share tension based on modular ratio", D: "The concrete is assumed to be cracked and ignored" },
+                    answer: "D"
+                },
+                {
+                    question: "What is the minimum factor of safety required against sliding and overturning for retaining walls designed according to the IBC 2015, when seismic loads are not included?",
+                    options: { A: "1.1", B: "1.25", C: "1.5", D: "2.0" },
+                    answer: "C"
+                },
+                {
+                    question: "In a bolted steel connection, what failure mode is a combination of shear failure along one plane and tension failure perpendicular to that plane?",
+                    options: { A: "Bolt shear rupture", B: "Bolt tension rupture", C: "Bearing failure", D: "Block shear rupture" },
+                    answer: "D"
+                },
+                {
+                    question: "For a cantilever beam subjected to a uniform load over its entire length, what is the shape of the corresponding moment diagram?",
+                    options: { A: "Linear with zero moment at the free end", B: "Linear with maximum moment at the fixed end", C: "Second-degree curve with zero moment at the free end", D: "Second-degree curve with maximum moment at the free end" },
+                    answer: "C"
+                },
+                {
+                    question: "When using the Virtual Work method for truss deflection, the internal work calculation involves a summation of which terms for each member?",
+                    options: { A: "N * n * L / AE", B: "P * L / AE", C: "M * m * L / EI", D: "Shear * v * L / AG" },
+                    answer: "A"
+                },
+                {
+                    question: "According to the sources, which type of standard concrete cement is recommended for enhanced sulfate resistance?",
+                    options: { A: "Type I", B: "Type II or Type V", C: "Type III", D: "Type IV" },
+                    answer: "B"
+                },
+                {
+                    question: "The allowable shear stress resisted by shear reinforcement Vs in a reinforced concrete beam is given by which basic formula?",
+                    options: { A: "Av * fy * d / s", B: "2 * sqrt(f'c) * bw * d", C: "Vs_required / phi", D: "(Vu / phi) - Vc" },
+                    answer: "A"
+                },
+                {
+                    question: "For dowel-type timber fasteners loaded in withdrawal tension, the nominal design value W for wood screws is proportional to what power of the screw diameter D?",
+                    options: { A: "D^1.0", B: "D^1.5", C: "D^2.0", D: "D^2.5" },
+                    answer: "A"
+                },
+                {
+                    question: "Which AASHTO moving load consists of a uniform load of 640 plf?",
+                    options: { A: "HS20 Design Truck Loading", B: "Design Uniform Lane Loading", C: "Design Tandem Loading", D: "HL-93 Load Combination" },
+                    answer: "B"
+                },
+                {
+                    question: "According to the source, for a simply supported beam, the maximum moment occurs at points of:",
+                    options: { A: "Maximum shear", B: "Zero shear", C: "Inflection point", D: "Maximum deflection" },
+                    answer: "B"
+                },
+                {
+                    question: "In a statically determinate two-dimensional truss, the relationship between the number of members (m), reaction components (r), and joints (j) is:",
+                    options: { A: "m + r < 2j", B: "m + r = 2j", C: "m + r > 2j", D: "m * r = 2j" },
+                    answer: "B"
+                },
+                {
+                    question: "For a rectangular beam cross-section, the maximum shear stress occurs at what location relative to the neutral axis?",
+                    options: { A: "Top fiber", B: "Bottom fiber", C: "Neutral axis (mid-depth)", D: "Quarter depth" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the sources, for normal weight concrete, the modulus of elasticity E is permitted to be calculated using which formula (with f’c in psi)?",
+                    options: { A: "E = 33 * sqrt(f'c * wc^1.5)", B: "E = 57,000 * sqrt(f'c)", C: "E = 29,000,000 psi", D: "E = f'c / strain" },
+                    answer: "B"
+                },
+                {
+                    question: "The total tensile force in the steel reinforcement of a concrete beam at the nominal moment capacity is given by:",
+                    options: { A: "Cc", B: "0.85 * f’c * a * b", C: "As * fy", D: "Mu / (phi * d)" },
+                    answer: "C"
+                },
+                {
+                    question: "When analyzing a T-beam section, if the depth of the equivalent rectangular stress block 'a' is calculated to be less than or equal to the flange thickness (hf), the beam can be analyzed as a:",
+                    options: { A: "Rectangular beam with width equal to the web width (bw)", B: "Rectangular beam with width equal to the effective flange width (be)", C: "Doubly reinforced beam", D: "Section requiring shear reinforcement" },
+                    answer: "B"
+                },
+                {
+                    question: "What is the recommended limit for the maximum bar spacing for flexural reinforcement in a one-way concrete slab according to ACI?",
+                    options: { A: "2h or 12 in", B: "3h or 18 in", C: "4h or 12 in", D: "5h or 18 in" },
+                    answer: "B"
+                },
+                {
+                    question: "In the ACI strength design load combinations, what load factor is applied to the Dead Load (D) when it is combined with Live Load (L) and Snow Load (S)?",
+                    options: { A: "1.0", B: "1.2", C: "1.4", D: "1.6" },
+                    answer: "B"
+                },
+                {
+                    question: "For a continuous beam, an influence line for the reaction at a support indicates that maximum reaction occurs when:",
+                    options: { A: "Only the span adjacent to the support is loaded", B: "Alternate spans starting with the span adjacent to the support are loaded", C: "All spans are loaded", D: "Spans that cause upward displacement at the support (if support was removed) are loaded" },
+                    answer: "B"
+                },
+                {
+                    question: "When using the Moment-Area method, Theorem 1 states that the angle between tangents at two points on the elastic curve equals the area under which diagram between those points?",
+                    options: { A: "Shear diagram", B: "Moment diagram", C: "Load diagram", D: "M / EI diagram" },
+                    answer: "D"
+                },
+                {
+                    question: "For a timber column with known end-fixity, the effective length (le) is calculated as K * lu, where lu is the unsupported length. The NDS states that for solid rectangular columns, the slenderness ratio shall be less than or equal to:",
+                    options: { A: "25", B: "50", C: "75", D: "100" },
+                    answer: "B"
+                },
+                 {
+                    question: "In masonry design using Working Stress Design for flexure, the modular ratio 'n' is used in the calculation of the neutral axis depth ratio 'k' and the internal lever arm ratio 'j'. This modular ratio accounts for the difference in stiffness between:",
+                    options: { A: "Masonry units and mortar", B: "Steel reinforcement and grout", C: "Steel reinforcement and masonry", D: "Steel reinforcement and concrete" },
+                    answer: "C"
+                },
+                {
+                    question: "When considering lateral earth pressure on a retaining wall, the ratio of horizontal to vertical pressure is called the:",
+                    options: { A: "Angle of internal friction", B: "Unit weight of soil", C: "Coefficient of earth pressure", D: "Passive pressure coefficient" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the sources, the AASHTO HL-93 design load is composed of which main components?",
+                    options: { A: "Design Truck or Design Tandem, AND Design Uniform Lane Load", B: "HS20 Truck, AND Design Uniform Lane Load", C: "HS20 Truck, AND Design Tandem Loading", D: "Design Uniform Lane Load, AND Design Tandem Loading" },
+                    answer: "A"
+                },
+                 {
+                    question: "What is the function of the 'link element' in an Eccentrically Braced Steel Frame (EBF)?",
+                    options: { A: "To transfer all tension forces", B: "To act as a 'fuse' element where inelastic deformation is concentrated", C: "To prevent buckling of the diagonal braces", D: "To increase the frame's overall stiffness" },
+                    answer: "B"
+                },
+                 {
+                    question: "In concrete anchor design (ACI 318), which of the following is NOT listed as a potential failure mode?",
+                    options: { A: "Steel yielding", B: "Concrete crushing", C: "Concrete breakout", D: "Pullout strength" },
+                    answer: "B"
+                },
+                {
+                    question: "For a simply supported concrete beam, the critical section for shear design is located at a distance 'd' from the face of the support, where 'd' is the:",
+                    options: { A: "Total depth of the beam", B: "Effective depth of the beam", C: "Width of the beam", D: "Clear span of the beam" },
+                    answer: "B"
+                },
+                 {
+                    question: "When designing a combined footing for two columns, what is the primary advantage mentioned regarding the soil bearing pressure distribution?",
+                    options: { A: "It always results in a uniform rectangular pressure.", B: "It simplifies the analysis by allowing a uniform bearing pressure to coincide with the resultant of the column loads.", C: "It eliminates the need to check for punching shear.", D: "It is always trapezoidal, which is easy to analyze." },
+                    answer: "B"
+                },
+                {
+                    question: "According to AISC specifications, for a steel tension member, the design strength for tensile yielding of the gross section (Ag) utilizes which strength property of the steel?",
+                    options: { A: "Fu (Ultimate Strength)", B: "Fy (Yield Strength)", C: "Fcr (Critical Buckling Stress)", D: "Fv (Shear Yield Strength)" },
+                    answer: "B"
+                },
+                {
+                    question: "For fillet welds, the nominal strength (Fnw) calculation includes a factor based on the angle of loading (theta) measured from the weld longitudinal axis. For FEXX classified filler metal, this formula is 0.60 * FEXX * (1.0 + 0.5 * sin^1.5(theta)). What is the typical range for the strength reduction factor (phi) and safety factor (omega) for fillet weld strength?",
+                    options: { A: "phi = 0.90, omega = 1.67", B: "phi = 0.75, omega = 2.00", C: "phi = 0.65, omega = 2.31", D: "phi = 1.00, omega = 1.50" },
+                    answer: "B"
+                },
+                {
+                    question: "In the analysis of an eccentrically loaded bolted steel connection using the Instantaneous Center of Rotation method, which bolt is assumed to fail first and have the largest shear stress?",
+                    options: { A: "The bolt closest to the applied load", B: "The bolt closest to the center of rotation", C: "The bolt farthest from the center of rotation", D: "The bolt at the centroid of the bolt group" },
+                    answer: "C"
+                },
+                {
+                    question: "According to NDS for sawn lumber, the Load Duration Factor (CD) changes based on the type of loads applied. What is the CD value typically used for Live Load (L)?",
+                    options: { A: "0.90", B: "1.00", C: "1.15", D: "1.25" },
+                    answer: "D"
+                },
+                 {
+                    question: "According to NDS for sawn lumber beams, the Beam Stability Factor (CL) is calculated. If the depth of a member does not exceed its breadth (d <= b), what is the value of CL?",
+                    options: { A: "0.5", B: "0.75", C: "1.0", D: "It must be calculated using the full formula" },
+                    answer: "C"
+                },
+                 {
+                    question: "In masonry design (Working Stress Design), the formula for the allowable shear stress resisted by masonry (Fvm) includes terms related to the applied moment (M), shear (V), effective depth (d), and concrete compressive strength (f'm). Which formula is used for shear walls and beams, with an additional term added for shear walls?",
+                    options: { A: "Fvm = 0.5 * sqrt(f'm)", B: "Fvm = 4.0 - 1.75 * (M/(V*d)) + 0.25 * (P/Anv) * sqrt(f'm)", C: "Fvm = Av * fy / (s * bn)", D: "Fvm = 0.25 * f'm" },
+                    answer: "B"
+                },
+                {
+                    question: "For a two-dimensional truss joint with only two non-collinear members and no external load applied at that joint, what is the force in each member?",
+                    options: { A: "Tension member", B: "Compression member", C: "Zero-force member", D: "Load-bearing member" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the sources, what is the unit weight typically assumed for normal reinforced concrete?",
+                    options: { A: "90 pcf", B: "120 pcf", C: "145 pcf", D: "150 pcf" },
+                    answer: "D"
+                },
+                {
+                    question: "In concrete anchor design (ACI 318), the basic concrete breakout strength in tension (Nb) formula for cast-in anchors includes a coefficient (kc). What is the value of kc for cast-in anchors?",
+                    options: { A: "17", B: "24", C: "40", D: "50" },
+                    answer: "B"
+                },
+                {
+                    question: "When designing steel composite beams, what is the primary mechanism typically used to transfer shear between the concrete slab and the steel beam?",
+                    options: { A: "Welded plates", B: "High-strength bolts", C: "Headed shear studs", D: "Epoxy adhesive" },
+                    answer: "C"
+                },
+                {
+                    question: "The elastic bending stress formula is given as f = M*y/I. The term 'y' in this formula represents the distance from the neutral axis to the point where the stress is calculated. For maximum bending stress, 'y' becomes 'c', which is the distance from the neutral axis to the:",
+                    options: { A: "Centroid of the section", B: "Point of zero shear", C: "Extreme fiber of the section", D: "Location of maximum moment" },
+                    answer: "C"
+                },
+                {
+                    question: "In determinate structural analysis, a pin or hinge support provides which type(s) of reactions?",
+                    options: { A: "One vertical reaction", B: "One moment reaction", C: "Two reactions (horizontal and vertical)", D: "Two reactions and a moment" },
+                    answer: "C"
+                },
+                 {
+                    question: "For a simply supported beam subjected to a concentrated load at its midspan, if the span length (L) is increased to 2L, how does the maximum deflection change?",
+                    options: { A: "It becomes 2 times larger", B: "It becomes 4 times larger", C: "It becomes 8 times larger", D: "It becomes 16 times larger" },
+                    answer: "C"
+                },
+                {
+                    question: "According to AISC specifications, for a steel tension member, the design strength for tensile rupture on the effective net area (Ae) utilizes which strength property of the steel?",
+                    options: { A: "Fy (Yield Strength)", B: "Fu (Ultimate Strength)", C: "Fcr (Critical Buckling Stress)", D: "Fv (Shear Yield Strength)" },
+                    answer: "B"
+                },
+                 {
+                    question: "According to NDS for sawn lumber, the Load Duration Factor (CD) for snow load (S) is typically taken as:",
+                    options: { A: "1.00", B: "1.15", C: "1.25", D: "1.60" },
+                    answer: "B"
+                },
+                {
+                    question: "In masonry design using Working Stress Design, the allowable steel tensile stress (Fs) for Grade 60 reinforcement is typically taken as:",
+                    options: { A: "24,000 psi", B: "32,000 psi", C: "40,000 psi", D: "60,000 psi" },
+                    answer: "A"
+                },
+                 {
+                    question: "For a shallow foundation subjected to an eccentric load P with eccentricity 'e' about one axis, if the eccentricity e is equal to L/6 where L is the dimension of the footing in the direction of eccentricity, what is the resulting soil pressure distribution under the footing?",
+                    options: { A: "Uniform rectangular pressure", B: "Triangular pressure with zero pressure at one edge", C: "Trapezoidal pressure", D: "Pressure with uplift over a portion of the footing" },
+                    answer: "B"
+                },
+                {
+                    question: "According to the sources, the IBC alternate procedure for wind design is a simplification of which ASCE 7 procedure?",
+                    options: { A: "Directional Procedure, Chapters 27 and 30", B: "Envelope Procedure", C: "Simplified Procedure", D: "Wind Tunnel Procedure" },
+                    answer: "A"
+                },
+                {
+                    question: "According to the sources, what is the Modulus of Elasticity (E) typically assumed for steel?",
+                    options: { A: "29,000 psi", B: "29,000 ksi", C: "57,000 ksi", D: "57,000,000 psi" },
+                    answer: "B"
+                },
+                {
+                    question: "In the ACI strength design load combinations, what load factor is applied to Dead Load (D) when it is combined with Wind Load (W)?",
+                    options: { A: "0.9 or 1.2", B: "1.0", C: "1.4", D: "1.6" },
+                    answer: "A"
+                },
+                {
+                    question: "For a rectangular beam cross-section under shear, the average shear stress is calculated as V/A. The maximum shear stress for a rectangular section is how many times the average shear stress?",
+                    options: { A: "1.0 times", B: "1.25 times", C: "1.5 times", D: "2.0 times" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the sources, what is the ultimate strength (fpu) typically assumed for prestressing strand?",
+                    options: { A: "60 ksi", B: "150 ksi", C: "270 ksi", D: "300 ksi" },
+                    answer: "C"
+                },
+                {
+                    question: "In concrete anchor design (ACI 318), which failure mode for anchors in tension is calculated using the net area of the anchor head (Abrg)?",
+                    options: { A: "Steel strength", B: "Concrete breakout", C: "Pullout strength", D: "Side-face blowout" },
+                    answer: "C"
+                },
+                {
+                    question: "According to AASHTO Article 3.6.1.1.2, what is the Multiple Presence Factor (MPF) used for a design when considering two loaded lanes?",
+                    options: { A: "1.2", B: "1.0", C: "0.85", D: "0.65" },
+                    answer: "B"
+                },
+                {
+                    question: "When considering the vertical distribution of seismic forces in a building, the formula often involves a factor 'k'. For fundamental periods T ≤ 0.5 seconds, what is the value of k?",
+                    options: { A: "0.5", B: "1.0", C: "2.0", D: "It must be interpolated" },
+                    answer: "B"
+                },
+                {
+                    question: "In the context of lateral load paths, what are elements perpendicular to the applied load that are located at the diaphragm boundary called?",
+                    options: { A: "Shear walls", B: "Collectors", C: "Chords", D: "Struts" },
+                    answer: "C"
+                },
+                {
+                    question: "According to the sources, for sawn lumber columns with a rectangular cross-section, the slenderness ratio used in buckling analysis is the larger ratio calculated with respect to:",
+                    options: { A: "The nominal dimensions", B: "The actual dimensions", C: "The strong or weak axis", D: "The unsupported or effective length" },
+                    answer: "C"
+                },
+                {
+                    question: "In masonry shear design (Working Stress Design), the allowable shear stress resisted by shear reinforcement (Fvs) is calculated using the area of shear reinforcement (Av) and its spacing (s). What is the basic formula for Fvs?",
+                    options: { A: "0.5 * sqrt(f'm)", B: "0.5 * (Av * fy) / s", C: "4.0 - 1.75 * (M/Vd)", D: "V / Anv" },
+                    answer: "B"
+                },
+                {
+                    question: "According to the source, in ASD, all terms representing the required capacity based on service loads (such as P_total, P_demand, Design Load) represent the same concept. What term is used in LRFD to represent this required capacity based on factored loads?",
+                    options: { A: "Nominal Load", B: "Allowable Load", C: "Ultimate Load (Pu)", D: "Service Load" },
+                    answer: "C"
+                },
+                 {
+                    question: "For a rectangular steel beam cross-section, if the web has a width-to-thickness ratio less than the plastic limiting ratio, the web is considered:",
+                    options: { A: "Slender", B: "Non-compact", C: "Compact", D: "Not applicable to web buckling" },
+                    answer: "C"
+                }
+            ];
+
+            const quizForm = document.getElementById('quiz-form');
+            const questionsWrapper = document.getElementById('questions-wrapper');
+            const resultsContainer = document.getElementById('results-container');
+            const scoreText = document.getElementById('score-text');
+            const scorePercentage = document.getElementById('score-percentage');
+            const resetBtn = document.getElementById('reset-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            let chartInstance = null;
+
+            function renderQuiz() {
+                questionsWrapper.innerHTML = '';
+                quizData.forEach((item, index) => {
+                    const questionNumber = index + 1;
+                    const questionBlock = document.createElement('div');
+                    questionBlock.className = 'question-block';
+                    questionBlock.dataset.questionIndex = index;
+                    
+                    let optionsHtml = '';
+                    for (const key in item.options) {
+                        optionsHtml += `
+                            <div class="relative">
+                                <input type="radio" name="question${index}" id="q${index}_${key}" value="${key}" class="sr-only">
+                                <label for="q${index}_${key}" class="quiz-option-label block w-full p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
+                                    <span class="font-bold mr-2">${key}.</span> ${item.options[key]}
+                                </label>
+                            </div>
+                        `;
+                    }
+
+                    questionBlock.innerHTML = `
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">${questionNumber}. ${item.question}</h3>
+                        <div class="space-y-3">${optionsHtml}</div>
+                    `;
+                    questionsWrapper.appendChild(questionBlock);
+                });
+            }
+
+            function handleOptionSelect(e) {
+                const targetLabel = e.target.closest('.quiz-option-label');
+                if (!targetLabel) return;
+
+                const questionBlock = targetLabel.closest('.question-block');
+                if (!questionBlock) return;
+                
+                // Remove 'selected' from all labels in the same question
+                const allLabelsInQuestion = questionBlock.querySelectorAll('.quiz-option-label');
+                allLabelsInQuestion.forEach(label => label.classList.remove('selected'));
+
+                // Add 'selected' to the clicked label
+                targetLabel.classList.add('selected');
+            }
+
+
+            function handleSubmit(e) {
+                e.preventDefault();
+                let score = 0;
+                
+                quizData.forEach((item, index) => {
+                    const selectedOption = quizForm.querySelector(`input[name="question${index}"]:checked`);
+                    const questionBlock = questionsWrapper.querySelector(`[data-question-index="${index}"]`);
+                    const allLabelsInQuestion = questionBlock.querySelectorAll('.quiz-option-label');
+                    allLabelsInQuestion.forEach(label => label.classList.remove('selected'));
+
+                    if (selectedOption) {
+                        const userAnswer = selectedOption.value;
+                        const correctLabel = quizForm.querySelector(`label[for="q${index}_${item.answer}"]`);
+                        const selectedLabel = quizForm.querySelector(`label[for="${selectedOption.id}"]`);
+
+                        if (userAnswer === item.answer) {
+                            score++;
+                            selectedLabel.classList.add('correct');
+                        } else {
+                            selectedLabel.classList.add('incorrect');
+                            correctLabel.classList.add('actual-answer');
+                        }
+                    } else {
+                        const correctLabel = quizForm.querySelector(`label[for="q${index}_${item.answer}"]`);
+                        correctLabel.classList.add('actual-answer');
+                    }
+                });
+
+                displayResults(score);
+                
+                quizForm.querySelectorAll('input[type="radio"]').forEach(input => {
+                    input.disabled = true;
+                });
+                submitBtn.style.display = 'none';
+                questionsWrapper.removeEventListener('click', handleOptionSelect);
+
+            }
+
+            function displayResults(score) {
+                const totalQuestions = quizData.length;
+                const percentage = Math.round((score / totalQuestions) * 100);
+
+                scoreText.textContent = `You answered ${score} out of ${totalQuestions} questions correctly.`;
+                scorePercentage.textContent = `${percentage}%`;
+
+                resultsContainer.classList.remove('hidden');
+                resultsContainer.scrollIntoView({ behavior: 'smooth' });
+
+                const ctx = document.getElementById('resultsChart').getContext('2d');
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Correct', 'Incorrect'],
+                        datasets: [{
+                            data: [score, totalQuestions - score],
+                            backgroundColor: ['#22c55e', '#ef4444'],
+                            borderColor: ['#ffffff', '#ffffff'],
+                            borderWidth: 4,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                enabled: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            function resetQuiz() {
+                quizForm.reset();
+                resultsContainer.classList.add('hidden');
+                
+                quizForm.querySelectorAll('label').forEach(label => {
+                    label.classList.remove('correct', 'incorrect', 'actual-answer', 'selected');
+                });
+
+                quizForm.querySelectorAll('input[type="radio"]').forEach(input => {
+                    input.disabled = false;
+                });
+
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+                submitBtn.style.display = 'inline-block';
+                questionsWrapper.addEventListener('click', handleOptionSelect);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            quizForm.addEventListener('submit', handleSubmit);
+            resetBtn.addEventListener('click', resetQuiz);
+            questionsWrapper.addEventListener('click', handleOptionSelect);
+
+            renderQuiz();
+        });
+    </script>
+</body>
+</html>
